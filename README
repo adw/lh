@@ -1,4 +1,4 @@
-A command-line Lighthouse client (http://lighthouseapp.com/).
+lh is a command-line Lighthouse client (http://lighthouseapp.com/).
 
-It's written in Python, and needs httplib2
+It's written in Python: you'll need httplib2, too.
 (http://code.google.com/p/httplib2/).
