@@ -90,8 +90,11 @@ class LighthouseClient(Client):
 if __name__ == "__main__":
     cfg = getconfig()
     lhc = LighthouseClient(config=cfg)
-    cmd = sys.argv[1]
-    if cmd in COMMANDS:
-        print getattr(lhc, cmd)(*sys.argv[2:])
-    else:
-        sys.exit(1)
+    try:
+        cmd = sys.argv[1]
+        if cmd in COMMANDS:
+            print getattr(lhc, cmd)(*sys.argv[2:])
+        else:
+            raise IndexError
+    except IndexError:
+        print "Commands: %s" % " ".join(x for x in COMMANDS)
