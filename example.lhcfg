@@ -1,0 +1,7 @@
+# Edit this and copy it to ~/.lhcfg
+[global]
+key=YOUR_API_KEY_HERE
+account=ACCOUNT_NAME
+project=PROJECT_ID
+milestone=MILESTONE_ID
+# milestone is optional: if you specify it you only get tickets for that milestone, if you don't you get everything 
