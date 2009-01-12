@@ -49,7 +49,7 @@ class LighthouseClient(Client):
     def parse_tickets(tree, show_milestone=None):
         res = []
         for t in tree.xpath("//ticket"):
-            milestone = int(t.xpath("./milestone-id")[0].text or 0)
+            milestone = (t.xpath("./milestone-id")[0].text or 0)
             title = t.xpath("./title")[0].text
             number = (t.xpath("./number")[0].text)
             priority = int(t.xpath("./priority")[0].text)
