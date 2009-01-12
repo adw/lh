@@ -24,30 +24,36 @@ def getconfig():
     return d
     
 class Client(httplib2.Http):
+
     def __init__(self, key):
         super(Client, self).__init__()
         self.add_credentials(key, "x")
-    
+        self.headers = {}
+        
     def get(self, url):
-        resp, content = self.request(url, "GET", headers={
-            "content-type": "text/xml",
-        })
+        resp, content = self.request(url, "GET", headers=self.headers)
         if (resp["status"] == "200" or resp["status"] == "304"):
             tree = etree.fromstring(content)
             return tree, resp
         else:
             return None, resp
     
+    def post(self, url, data):
+        resp, content = self.request(url, "POST", body=data,
+                                     headers=self.headers)
+        return resp, content
+
     def put(self, url, data):
         resp, content = self.request(url, "PUT", body=data,
-            headers={"content-type": "text/xml"})
+                                     headers = self.headers)
         return resp, content
         
 class LighthouseClient(Client):
     def __init__(self, config):
         super(LighthouseClient, self).__init__(config["key"])
         self.config = config
-    
+        self.headers = {"content-type": "application/xml"}
+        
     @staticmethod
     def parse_tickets(tree, show_milestone=None):
         res = []
@@ -80,6 +86,30 @@ class LighthouseClient(Client):
         return "\n".join(res)
     
     @command
+    def open(self, *args):
+        name = args[0]
+        try:
+            message = args[1]
+        except IndexError:
+            message = ""
+        ticket = etree.Element("ticket")
+        title = etree.Element("title")
+        title.text = name
+        ticket.append(title)
+        body = etree.Element("body")
+        body.text = message
+        ticket.append(body)
+        url = "http://%s.lighthouseapp.com/projects/%s/tickets.xml" % (
+                self.config["account"], self.config["project"])    
+        resp, content = self.post(url, etree.tostring(ticket))
+        if resp["status"] == "201":
+            loc = resp["location"]
+            nr = loc.split("/")[-1].strip(".xml")
+            return "Ticket created (%s)" % nr
+        else:
+            return "Error in ticket creation."
+            
+    @command
     def update(self, *args):
         """ Update a ticket."""
         ticket_no = args[0]
@@ -95,8 +125,11 @@ class LighthouseClient(Client):
         tree = etree.tostring(ticket)
         url = "http://%s.lighthouseapp.com/projects/%s/tickets/%s.xml" % (
                 self.config["account"], self.config["project"], ticket_no)
-        resp = self.put(url, tree)
-        return "Done."
+        resp, content = self.put(url, tree)
+        if resp["status"] == "200":
+            return "Done."
+        else:
+            return "Error updating ticket."
 
     @command
     def show(self, *args):
