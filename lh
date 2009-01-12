@@ -73,20 +73,22 @@ class LighthouseClient(Client):
     
     @command
     def setstatus(self, *args):
-        ticket = args[0]
+        ticket_no = args[0]
         ticket_status = args[1]
         comment = args[2:]
         ticket = lxml.etree.Element("ticket")
-        status = lxml.etree.Element("status")
+        status = lxml.etree.Element("state")
         body = lxml.etree.Element("body")
         status.text = ticket_status
-        body.text = comment
+        body.text = " ".join(comment)
         ticket.append(status)
-        ticket.append(comment)
+        ticket.append(body)
         tree = lxml.etree.tostring(ticket)
-        self.put("http://%s.lighthouseapp.com/projects/%s/tickets/%s.xml" %(
-            self.config["account"], self.config["project"], ticket))
-        
+        url = "http://%s.lighthouseapp.com/projects/%s/tickets/%s.xml" % (
+                self.config["account"], self.config["project"], ticket_no)
+        resp = self.put(url, tree)
+        return "Done."
+
 if __name__ == "__main__":
     cfg = getconfig()
     lhc = LighthouseClient(config=cfg)
