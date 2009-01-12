@@ -13,7 +13,8 @@ def command(meth):
     COMMANDS.append(meth.__name__)
     return meth
     
-def getconfig(fn):
+def getconfig():
+    fn = os.path.join(os.environ["HOME"], ".lhcfg")
     cp = ConfigParser.SafeConfigParser()
     cp.read(fn)
     d = defaultdict(lambda: None)
@@ -71,16 +72,23 @@ class LighthouseClient(Client):
         return "\n".join(res)
     
     @command
-    def close(self, *args):
+    def setstatus(self, *args):
         ticket = args[0]
+        ticket_status = args[1]
+        comment = args[2:]
         ticket = lxml.etree.Element("ticket")
         status = lxml.etree.Element("status")
-        status.text = "staged"
+        body = lxml.etree.Element("body")
+        status.text = ticket_status
+        body.text = comment
         ticket.append(status)
+        ticket.append(comment)
         tree = lxml.etree.tostring(ticket)
+        self.put("http://%s.lighthouseapp.com/projects/%s/tickets/%s.xml" %(
+            self.config["account"], self.config["project"], ticket))
         
 if __name__ == "__main__":
-    cfg = getconfig("settings.cfg")
+    cfg = getconfig()
     lhc = LighthouseClient(config=cfg)
     cmd = sys.argv[1]
     if cmd in COMMANDS:
