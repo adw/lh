@@ -7,6 +7,7 @@ import ConfigParser
 from collections import defaultdict
 import sys
 import os
+import webbrowser
 
 COMMANDS = []
 
@@ -65,6 +66,7 @@ class LighthouseClient(Client):
    
     @command
     def list(self, *args):
+        """ List your tickets (for the current milestone, if set, and highest priority first, if sorted)."""
         res = []
         t = self.get(
                 "http://%s.lighthouseapp.com/projects/%s/tickets.xml" % (
@@ -72,13 +74,14 @@ class LighthouseClient(Client):
         if t[0]:
             for t in sorted(self.parse_tickets(t[0], 
                             show_milestone=self.config["milestone"])):
-                res.append(" ".join(str(x) for x in t[1:]))
+                res.append(" ".join(str(x) for x in t[2:]))
         else:
             res.append(str(t[1]))
         return "\n".join(res)
     
     @command
-    def setstatus(self, *args):
+    def update(self, *args):
+        """ Update a ticket."""
         ticket_no = args[0]
         ticket_status = args[1]
         comment = args[2:]
@@ -95,6 +98,15 @@ class LighthouseClient(Client):
         resp = self.put(url, tree)
         return "Done."
 
+    @command
+    def show(self, *args):
+        """Show a ticket in your default browser."""
+        nr = args[0]
+        url = "http://%s.lighthouseapp.com/projects/%s/tickets/%s" % (
+                self.config["account"], self.config["project"], nr)
+        webbrowser.open(url)
+        return "Done."
+        
 if __name__ == "__main__":
     cfg = getconfig()
     lhc = LighthouseClient(config=cfg)
