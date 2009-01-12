@@ -1,0 +1,4 @@
+A command-line Lighthouse client (http://lighthouseapp.com/).
+
+It's written in Python, and needs httplib2
+(http://code.google.com/p/httplib2/).
