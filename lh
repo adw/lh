@@ -86,7 +86,7 @@ class LighthouseClient(Client):
         return "\n".join(res)
     
     @command
-    def open(self, *args):
+    def add(self, *args):
         name = args[0]
         try:
             message = args[1]
