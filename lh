@@ -21,7 +21,11 @@ def getconfig():
     cp.read(fn)
     d = defaultdict(lambda: None)
     d.update(cp.items('global'))
-    return d
+    try:
+        u = dict(cp.items('users'))
+    except ConfigParser.NoSectionError:
+        u = {}
+    return d, u
     
 class Client(httplib2.Http):
 
@@ -49,11 +53,15 @@ class Client(httplib2.Http):
         return resp, content
         
 class LighthouseClient(Client):
-    def __init__(self, config):
+    def __init__(self, config, users=None):
         super(LighthouseClient, self).__init__(config["key"])
         self.config = config
         self.headers = {"content-type": "application/xml"}
-        
+        if users != None:
+            self.users = users
+        else:
+            self.users = {}
+            
     @staticmethod
     def parse_tickets(tree, show_milestone=None):
         res = []
@@ -69,7 +77,30 @@ class LighthouseClient(Client):
             if not show_milestone or milestone==show_milestone:
                 res.append((milestone, priority, number, title))
         return res
-   
+    
+    def modify_ticket(self, ticket_no, ticket):
+        tree = etree.tostring(ticket)
+        url = "http://%s.lighthouseapp.com/projects/%s/tickets/%s.xml" % (
+                self.config["account"], self.config["project"], ticket_no)
+        resp, content = self.put(url, tree)
+        if resp["status"] == "200":
+            return "Done."
+        else:
+            return "Error updating ticket."
+
+    @command
+    def assign(self, *args):
+        """ Reassign a ticket to another user."""
+        assert len(args) == 2
+        ticket_no = args[0]
+        user = self.users[args[1]]
+        ticket = etree.Element("ticket")
+        userid = etree.Element("assigned-user-id")
+        userid.attrib["type"] = "integer"
+        userid.text = str(user)
+        ticket.append(userid)
+        return self.modify_ticket(ticket_no, ticket)
+        
     @command
     def list(self, *args):
         """ List your tickets (for the current milestone, if set, and highest priority first, if sorted)."""
@@ -87,6 +118,7 @@ class LighthouseClient(Client):
     
     @command
     def add(self, *args):
+        """ Add a new ticket."""
         name = args[0]
         try:
             message = args[1]
@@ -111,7 +143,7 @@ class LighthouseClient(Client):
             
     @command
     def update(self, *args):
-        """ Update a ticket."""
+        """ Update the status (open, closed, etc). of a ticket."""
         ticket_no = args[0]
         ticket_status = args[1]
         comment = args[2:]
@@ -122,14 +154,7 @@ class LighthouseClient(Client):
         body.text = " ".join(comment)
         ticket.append(status)
         ticket.append(body)
-        tree = etree.tostring(ticket)
-        url = "http://%s.lighthouseapp.com/projects/%s/tickets/%s.xml" % (
-                self.config["account"], self.config["project"], ticket_no)
-        resp, content = self.put(url, tree)
-        if resp["status"] == "200":
-            return "Done."
-        else:
-            return "Error updating ticket."
+        return self.modify_ticket(ticket_no, ticket)
 
     @command
     def show(self, *args):
@@ -139,10 +164,25 @@ class LighthouseClient(Client):
                 self.config["account"], self.config["project"], nr)
         webbrowser.open(url)
         return "Done."
+
+    @command
+    def usernames(self):
+        """ List the user nicknames lh knows about."""
+        return " ".join(sorted(self.users.keys()))
+        
+    @command
+    def help(self, *args):
+        """ Get help on a command or list of commands."""
+        if not set(args).issubset(set(COMMANDS)):
+            return "Unknown command(s): %s" % \
+                        " ".join(set(args).difference(set(COMMANDS)))
+        hstr = ((x, (getattr(self, x).__doc__ or "No help available.")) 
+                 for x in args)
+        return "\n".join(("%s: %s" % x) for x in hstr)
         
 if __name__ == "__main__":
-    cfg = getconfig()
-    lhc = LighthouseClient(config=cfg)
+    cfg, users = getconfig()
+    lhc = LighthouseClient(config=cfg, users=users)
     try:
         cmd = sys.argv[1]
         if cmd in COMMANDS:
