@@ -59,11 +59,12 @@ class LighthouseClient(Client):
         self.headers = {"content-type": "application/xml"}
         if users != None:
             self.users = users
+            self.creator_ids = dict((v,k) for k,v in self.users.items())
         else:
             self.users = {}
-            
-    @staticmethod
-    def parse_tickets(tree, show_milestone=None):
+            self.creator_ids = {}
+
+    def parse_tickets(self, tree, show_milestone=None):
         res = []
         for t in tree.getiterator(tag="ticket"):
             milestone = t.find("milestone-id")
@@ -74,8 +75,13 @@ class LighthouseClient(Client):
             title = t.find("title").text
             number = t.find("number").text
             priority = int(t.find("priority").text)
+            creator_id = t.find("creator-id").text
+            if creator_id in self.creator_ids:
+                creator = "(creator: %s)" % self.creator_ids[creator_id]
+            else:
+                creator = "(creator: %s)" % creator_id
             if not show_milestone or milestone==show_milestone:
-                res.append((milestone, priority, number, title))
+                res.append((milestone, priority, number, title, creator))
         return res
     
     def modify_ticket(self, ticket_no, ticket):
