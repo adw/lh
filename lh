@@ -173,6 +173,8 @@ class LighthouseClient(Client):
     @command
     def help(self, *args):
         """ Get help on a command or list of commands."""
+        if len(args) == 0: 
+            raise IndexError
         if not set(args).issubset(set(COMMANDS)):
             return "Unknown command(s): %s" % \
                         " ".join(set(args).difference(set(COMMANDS)))
