@@ -11,11 +11,13 @@ import webbrowser
 
 COMMANDS = []
 
+# Decorate any commands you want to expose with this.
 def command(meth):
     COMMANDS.append(meth.__name__)
     return meth
     
 def getconfig():
+    """ Parse ~/.lhcfg ."""
     fn = os.path.join(os.environ["HOME"], ".lhcfg")
     cp = ConfigParser.SafeConfigParser()
     cp.read(fn)
@@ -28,7 +30,6 @@ def getconfig():
     return d, u
     
 class Client(httplib2.Http):
-
     def __init__(self, key):
         super(Client, self).__init__()
         self.add_credentials(key, "x")
@@ -64,6 +65,7 @@ class LighthouseClient(Client):
             self.users = {}
             self.creator_ids = {}
 
+    ## helper methods
     def parse_tickets(self, tree, show_milestone=None):
         res = []
         for t in tree.getiterator(tag="ticket"):
