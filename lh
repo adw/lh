@@ -125,7 +125,7 @@ class LighthouseClient(Client):
         return "\n".join(res)
     
     @command
-    def add(self, *args):
+    def new(self, *args):
         """ Add a new ticket."""
         name = args[0]
         try:
@@ -136,6 +136,9 @@ class LighthouseClient(Client):
         title = etree.Element("title")
         title.text = name
         ticket.append(title)
+        ms = etree.Element("milestone-id")
+        ms.text = self.config["milestone"]
+        ticket.append(ms)
         body = etree.Element("body")
         body.text = message
         ticket.append(body)
@@ -150,8 +153,8 @@ class LighthouseClient(Client):
             return "Error in ticket creation."
             
     @command
-    def update(self, *args):
-        """ Update the status (open, closed, etc). of a ticket."""
+    def set(self, *args):
+        """ Set the status (open, closed, etc). of a ticket."""
         ticket_no = args[0]
         ticket_status = args[1]
         comment = args[2:]
